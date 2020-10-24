@@ -1,26 +1,23 @@
-from channels.generic.websocket import WebsocketConsumer
-from asgiref.sync import async_to_sync
+from channels.generic.websocket import AsyncWebsocketConsumer
 import json
 
 
-class ChatConsumer(WebsocketConsumer):
-    def connect(self):
-        async_to_sync(self.channel_layer.group_add)('test', self.channel_name)
-        self.accept()
-        self.send(text_data=json.dumps({'message': 'Connected to server!', 'username': 'SERVER'}))
+class ChatConsumer(AsyncWebsocketConsumer):
+    async def connect(self):
+        await self.channel_layer.group_add('test', self.channel_name)
+        await self.accept()
+        await self.send(text_data=json.dumps({'message': 'Connected to server!', 'username': 'SERVER'}))
 
-    def disconnect(self, close_code):
+    async def disconnect(self, close_code):
 
-        async_to_sync(self.channel_layer.group_discard)('test', self.channel_name)
+        await self.channel_layer.group_discard('test', self.channel_name)
 
-        pass
-
-    def receive(self, text_data):
+    async def receive(self, text_data):
         text_data_json = json.loads(text_data)
         message = text_data_json['message']
         username = text_data_json['username']
 
-        async_to_sync(self.channel_layer.group_send)(
+        await self.channel_layer.group_send(
             'test',
             {
                 'type': 'chat_message',
@@ -29,8 +26,8 @@ class ChatConsumer(WebsocketConsumer):
             }
         )
 
-    def chat_message(self, event):
+    async def chat_message(self, event):
         message = event['message']
         username = event['username']
 
-        self.send(text_data=json.dumps({'message': message, 'username': username}))
+        await self.send(text_data=json.dumps({'message': message, 'username': username}))
